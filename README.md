@@ -1,6 +1,6 @@
 # tsk-cli
 
-A terminal user interface for querying and browsing [tsk](https://github.com/jp/tsk-spec) task repositories.
+A terminal user interface for querying and browsing [tsk](https://github.com/jpcummins/tsk-spec) task repositories.
 
 ## Features
 
@@ -14,13 +14,13 @@ A terminal user interface for querying and browsing [tsk](https://github.com/jp/
 ## Installation
 
 ```bash
-go install github.com/jp/tsk-cli@latest
+go install github.com/jpcummins/tsk-cli@latest
 ```
 
 Or build from source:
 
 ```bash
-git clone https://github.com/jp/tsk-cli
+git clone https://github.com/jpcummins/tsk-cli
 cd tsk-cli
 go build -o tsk-cli .
 ```
@@ -85,12 +85,12 @@ Examples:
 ## Requirements
 
 - Go 1.25+
-- A tsk repository (see [tsk-spec](https://github.com/jp/tsk-spec))
+- A tsk repository (see [tsk-spec](https://github.com/jpcummins/tsk-spec))
 
 ## Related Projects
 
-- [tsk-spec](https://github.com/jp/tsk-spec) - Formal specification
-- [tsk-lib](https://github.com/jp/tsk-lib) - Go library for parsing and querying tsk repositories
+- [tsk-spec](https://github.com/jpcummins/tsk-spec) - Formal specification
+- [tsk-lib](https://github.com/jpcummins/tsk-lib) - Go library for parsing and querying tsk repositories
 
 ## License
 
