@@ -3,8 +3,8 @@ package ui
 import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
-	"github.com/jp/tsk-lib/engine"
-	"github.com/jp/tsk-lib/search"
+	"github.com/jpcummins/tsk-lib/engine"
+	"github.com/jpcummins/tsk-lib/search"
 )
 
 // viewState tracks which screen the user sees.

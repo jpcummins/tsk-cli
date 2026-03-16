@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/jp/tsk-cli/ui"
-	"github.com/jp/tsk-lib/engine"
-	"github.com/jp/tsk-lib/search"
+	"github.com/jpcummins/tsk-cli/ui"
+	"github.com/jpcummins/tsk-lib/engine"
+	"github.com/jpcummins/tsk-lib/search"
 )
 
 func main() {

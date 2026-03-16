@@ -1,4 +1,4 @@
-module github.com/jp/tsk-cli
+module github.com/jpcummins/tsk-cli
 
 go 1.25.1
 
@@ -6,7 +6,7 @@ require (
 	charm.land/bubbles/v2 v2.0.0
 	charm.land/bubbletea/v2 v2.0.2
 	charm.land/lipgloss/v2 v2.0.0
-	github.com/jp/tsk-lib v0.0.0
+	github.com/jpcummins/tsk-lib v0.0.0
 )
 
 require (
@@ -39,5 +39,3 @@ require (
 	modernc.org/memory v1.11.0 // indirect
 	modernc.org/sqlite v1.46.1 // indirect
 )
-
-replace github.com/jp/tsk-lib => ../tsk-lib

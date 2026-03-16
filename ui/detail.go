@@ -6,8 +6,8 @@ import (
 
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
-	"github.com/jp/tsk-lib/model"
-	"github.com/jp/tsk-lib/search"
+	"github.com/jpcummins/tsk-lib/model"
+	"github.com/jpcummins/tsk-lib/search"
 )
 
 type detailModel struct {
