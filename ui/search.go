@@ -37,6 +37,7 @@ func (m *searchModel) toggleMode() {
 	if m.mode == modeQuery {
 		m.mode = modeFuzzy
 		m.input.Placeholder = "Fuzzy search all tasks..."
+		m.input.SetValue("")
 	} else {
 		m.mode = modeQuery
 		m.input.Placeholder = "Enter a tsk query..."
