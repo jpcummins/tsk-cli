@@ -2,6 +2,8 @@
 
 A terminal user interface for querying and browsing [tsk](https://github.com/jpcummins/tsk-spec) repositories.
 
+https://github.com/user-attachments/assets/3dda7cf4-29f6-45cc-883e-7ef360300df2
+
 ## Features
 
 - **Dual search modes**: DSL query language and fuzzy search
