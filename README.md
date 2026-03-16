@@ -1,6 +1,6 @@
 # tsk-cli
 
-A terminal user interface for querying and browsing [tsk](https://github.com/jpcummins/tsk-spec) task repositories.
+A terminal user interface for querying and browsing [tsk](https://github.com/jpcummins/tsk-spec) repositories.
 
 ## Features
 
