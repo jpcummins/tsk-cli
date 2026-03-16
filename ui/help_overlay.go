@@ -154,6 +154,13 @@ func renderDSLReference(width int) string {
 	item("iteration.end", "End date (RFC3339)")
 	item("iteration.path", "Iteration canonical path")
 
+	section("SLA FIELDS (reporting only)")
+	item("sla.id", "SLA rule id")
+	item("sla.status", "Status: ok, at_risk, breached")
+	item("sla.target", "Target duration")
+	item("sla.elapsed", "Elapsed time")
+	item("sla.remaining", "Remaining time")
+
 	section("FUNCTIONS")
 	item("exists(field)", "Field is present")
 	item("missing(field)", "Field is absent")
@@ -191,6 +198,14 @@ func renderDSLReference(width int) string {
 	example(
 		`iteration.status.category = in_progress AND iteration.start <= date("today")`,
 		`Tasks in active iterations`,
+	)
+	example(
+		`sla.status = "breached"`,
+		`All breached SLA tasks`,
+	)
+	example(
+		`sla.id = "security-30d" AND sla.status = "breached"`,
+		`Breached security SLA tasks`,
 	)
 
 	b.WriteString("\n")
