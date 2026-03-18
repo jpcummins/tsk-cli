@@ -46,6 +46,7 @@ tsk-cli --me alice@example.com
 - **Ctrl+C**: Quit
 - **Ctrl+T**: Toggle between query (DSL) and fuzzy search modes
 - **Ctrl+H**: Show query language help (query mode only)
+- **Ctrl+S**: Open saved queries
 
 ### Search
 - **Enter**: Execute search (query mode) or open selected result
@@ -59,6 +60,7 @@ tsk-cli --me alice@example.com
 ### Detail View
 - **j/k** or **↑/↓**: Browse to next/previous result
 - **Esc**: Return to results list
+- **e**: Edit selected task in $EDITOR
 - Viewport scrolls with arrow keys
 
 ## Search Modes
