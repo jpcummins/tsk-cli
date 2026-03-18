@@ -41,6 +41,7 @@ func (m *searchModel) toggleMode() {
 	} else {
 		m.mode = modeQuery
 		m.input.Placeholder = "Enter a tsk query..."
+		m.input.SetValue("")
 	}
 }
 

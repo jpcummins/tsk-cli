@@ -9,7 +9,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/jpcummins/tsk-cli/ui"
 	"github.com/jpcummins/tsk-lib/engine"
-	"github.com/jpcummins/tsk-lib/search"
 )
 
 func main() {
@@ -62,15 +61,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Print warnings to stderr (non-fatal)
-	for _, w := range repo_.Warnings {
-		fmt.Fprintf(os.Stderr, "warning: %s\n", w)
+	// Print diagnostics to stderr (non-fatal)
+	for _, d := range repo_.Diagnostics.Warnings() {
+		fmt.Fprintf(os.Stderr, "warning: %s\n", d.Message)
+	}
+	for _, d := range repo_.Diagnostics.Errors() {
+		fmt.Fprintf(os.Stderr, "error: %s\n", d.Message)
 	}
 
-	// Build the fuzzy searcher from indexed tasks
-	searcher := search.New(repo_.Tasks)
-
-	m := ui.NewModel(eng, searcher)
+	m := ui.NewModel(eng, absPath)
 	p := tea.NewProgram(m)
 
 	if _, err := p.Run(); err != nil {

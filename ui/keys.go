@@ -3,14 +3,16 @@ package ui
 import "charm.land/bubbles/v2/key"
 
 type keyMap struct {
-	Quit       key.Binding
-	Tab        key.Binding
-	Enter      key.Binding
-	Escape     key.Binding
-	Up         key.Binding
-	Down       key.Binding
-	ToggleMode key.Binding
-	ToggleHelp key.Binding
+	Quit         key.Binding
+	Tab          key.Binding
+	Enter        key.Binding
+	Escape       key.Binding
+	Up           key.Binding
+	Down         key.Binding
+	ToggleMode   key.Binding
+	ToggleHelp   key.Binding
+	SavedQueries key.Binding
+	Edit         key.Binding
 }
 
 var keys = keyMap{
@@ -45,5 +47,13 @@ var keys = keyMap{
 	ToggleHelp: key.NewBinding(
 		key.WithKeys("ctrl+h"),
 		key.WithHelp("ctrl+h", "query help"),
+	),
+	SavedQueries: key.NewBinding(
+		key.WithKeys("ctrl+s"),
+		key.WithHelp("ctrl+s", "saved queries"),
+	),
+	Edit: key.NewBinding(
+		key.WithKeys("e"),
+		key.WithHelp("e", "edit task (detail view)"),
 	),
 }

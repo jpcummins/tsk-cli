@@ -1,61 +1,46 @@
 package ui
 
 import (
-	"fmt"
 	"strings"
 )
-
-type sampleQuery struct {
-	Query       string
-	Description string
-}
-
-var sampleQueries = []sampleQuery{
-	{"status = todo", "Find all tasks in todo"},
-	{"status.category = in_progress", "Tasks currently in progress"},
-	{"has(labels, \"bug\")", "Tasks labeled as bugs"},
-	{"assignee = me()", "Tasks assigned to you (requires --me)"},
-	{"due < date(\"tomorrow\")", "Tasks due soon"},
-	{"status.category != done", "All incomplete tasks"},
-	{"path ~ \"backend\"", "Tasks under the backend path"},
-}
-
-var sampleFuzzyQueries = []sampleQuery{
-	{"payment timeout", "Find tasks mentioning payment timeout"},
-	{"cart bug", "Tasks related to cart bugs"},
-	{"alice", "Tasks mentioning alice anywhere"},
-}
 
 func renderEmptyState(width int, fuzzy bool) string {
 	var b strings.Builder
 
 	b.WriteString("\n")
+	b.WriteString(emptyTitleStyle.Render("  Keyboard Shortcuts"))
+	b.WriteString("\n\n")
 
-	if fuzzy {
-		b.WriteString(emptyTitleStyle.Render("Fuzzy search"))
-		b.WriteString("\n\n")
-
-		for _, sq := range sampleFuzzyQueries {
-			query := sampleQueryStyle.Render(sq.Query)
-			desc := sampleDescStyle.Render(fmt.Sprintf("  %s", sq.Description))
-			b.WriteString(fmt.Sprintf("  %s\n%s\n\n", query, desc))
+	shortcut := func(key, desc string) {
+		b.WriteString("  ")
+		b.WriteString(sampleQueryStyle.Render(key))
+		padding := 16 - len(key)
+		if padding < 2 {
+			padding = 2
 		}
-	} else {
-		b.WriteString(emptyTitleStyle.Render("Try a query"))
-		b.WriteString("\n\n")
-
-		for _, sq := range sampleQueries {
-			query := sampleQueryStyle.Render(sq.Query)
-			desc := sampleDescStyle.Render(fmt.Sprintf("  %s", sq.Description))
-			b.WriteString(fmt.Sprintf("  %s\n%s\n\n", query, desc))
-		}
+		b.WriteString(strings.Repeat(" ", padding))
+		b.WriteString(sampleDescStyle.Render(desc))
+		b.WriteString("\n")
 	}
 
+	shortcut("enter", "Execute query")
+	shortcut("esc", "Clear / go back / quit")
+	shortcut("tab", "Switch focus between search and results")
+	shortcut("j / k", "Navigate up / down")
 	b.WriteString("\n")
+	shortcut("e", "Edit task in $EDITOR (detail view)")
+	b.WriteString("\n")
+	shortcut("ctrl+t", "Toggle query / fuzzy mode")
+	shortcut("ctrl+s", "Saved queries")
+	shortcut("ctrl+h", "Query language reference")
+	shortcut("ctrl+c", "Quit")
+
+	b.WriteString("\n")
+
 	if fuzzy {
-		b.WriteString(hintStyle.Render("Type to search (live) | ctrl+t to toggle mode"))
+		b.WriteString(hintStyle.Render("  Type to search (results update live)"))
 	} else {
-		b.WriteString(hintStyle.Render("Type a query and press Enter | ctrl+t to toggle | ctrl+h for help"))
+		b.WriteString(hintStyle.Render("  Type a query and press enter to search"))
 	}
 	b.WriteString("\n")
 

@@ -48,19 +48,22 @@ var (
 
 	resultPathSelectedStyle = lipgloss.NewStyle().
 				Foreground(colorHighlight).
+				Background(colorHighlightBg).
 				Bold(true)
 
 	resultMetaStyle = lipgloss.NewStyle().
 			Foreground(colorSecondary)
 
 	resultMetaSelectedStyle = lipgloss.NewStyle().
-				Foreground(colorHighlight)
+				Foreground(colorHighlight).
+				Background(colorHighlightBg)
 
 	resultSummaryStyle = lipgloss.NewStyle().
 				Foreground(colorMuted)
 
 	resultSummarySelectedStyle = lipgloss.NewStyle().
-					Foreground(colorHighlight)
+					Foreground(colorHighlight).
+					Background(colorHighlightBg)
 )
 
 // Detail view styles.
@@ -102,6 +105,11 @@ var (
 	matchHighlightStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#FFD700")).
 				Bold(true)
+
+	matchHighlightSelectedStyle = lipgloss.NewStyle().
+					Foreground(lipgloss.Color("#FFD700")).
+					Bold(true).
+					Background(colorHighlightBg)
 
 	matchContextStyle = lipgloss.NewStyle().
 				Foreground(colorMuted)

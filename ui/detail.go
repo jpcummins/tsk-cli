@@ -79,15 +79,15 @@ func (m detailModel) renderContent() string {
 	var b strings.Builder
 
 	// Header with key fields
-	b.WriteString(detailPathStyle.Render(string(task.CanonicalPath)))
+	b.WriteString(detailPathStyle.Render(string(task.Path)))
 	b.WriteString("\n")
 
 	var fields []string
 
 	if task.Status != "" {
 		fields = append(fields, fmt.Sprintf("Status: %s", task.Status))
-	} else if task.StatusCategory != "" {
-		fields = append(fields, fmt.Sprintf("Status: %s", task.StatusCategory))
+	} else if task.Category != "" {
+		fields = append(fields, fmt.Sprintf("Status: %s", task.Category))
 	}
 
 	if task.Assignee != "" {
@@ -98,8 +98,8 @@ func (m detailModel) renderContent() string {
 		fields = append(fields, fmt.Sprintf("Due: %s", task.Due.Format("2006-01-02")))
 	}
 
-	if !task.Date.IsZero() {
-		fields = append(fields, fmt.Sprintf("Created: %s", task.Date.Format("2006-01-02")))
+	if task.CreatedAt != nil {
+		fields = append(fields, fmt.Sprintf("Created: %s", task.CreatedAt.Format("2006-01-02")))
 	}
 
 	if task.Estimate != nil {
@@ -146,7 +146,7 @@ func (m detailModel) renderContent() string {
 	}
 
 	b.WriteString("\n\n")
-	b.WriteString(hintStyle.Render("esc to go back | j/k to browse results"))
+	b.WriteString(hintStyle.Render("esc to go back | j/k to browse results | e to edit"))
 	b.WriteString("\n")
 
 	return b.String()
@@ -162,8 +162,7 @@ func (m detailModel) findBodyHighlight() *search.Highlight {
 	return nil
 }
 
-// renderHighlightedBody renders the markdown body with matched positions
-// highlighted. All occurrences are highlighted.
+// renderHighlightedBody renders the markdown body with matched positions highlighted.
 func (m detailModel) renderHighlightedBody(body string, positions []search.Range) string {
 	if len(positions) == 0 {
 		return body
@@ -173,7 +172,6 @@ func (m detailModel) renderHighlightedBody(body string, positions []search.Range
 	prev := 0
 
 	for _, pos := range positions {
-		// Clamp to body bounds.
 		start := pos.Start
 		end := pos.End
 		if start < 0 {
@@ -186,18 +184,15 @@ func (m detailModel) renderHighlightedBody(body string, positions []search.Range
 			continue
 		}
 
-		// Write text before the match.
 		if start > prev {
 			b.WriteString(body[prev:start])
 		}
 
-		// Write the matched text with highlight.
 		b.WriteString(matchHighlightStyle.Render(body[start:end]))
 
 		prev = end
 	}
 
-	// Write remaining text after last match.
 	if prev < len(body) {
 		b.WriteString(body[prev:])
 	}

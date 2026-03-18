@@ -1,11 +1,21 @@
 package ui
 
 import (
+	"os"
+	"os/exec"
+	"path/filepath"
+
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"github.com/jpcummins/tsk-lib/engine"
-	"github.com/jpcummins/tsk-lib/search"
+	"github.com/jpcummins/tsk-lib/model"
 )
+
+// editorFinishedMsg is sent when the external editor exits.
+type editorFinishedMsg struct {
+	err      error
+	taskPath model.CanonicalPath
+}
 
 // viewState tracks which screen the user sees.
 type viewState int
@@ -27,17 +37,19 @@ const (
 // Model is the top-level Bubble Tea model for tsk-cli.
 type Model struct {
 	engine   *engine.Engine
-	searcher *search.Searcher
+	repoRoot string // absolute path to the repository root
 
 	state viewState
 	focus focusArea
 
-	search      searchModel
-	results     resultsModel
-	detail      detailModel
-	helpOverlay helpOverlayModel
+	search       searchModel
+	results      resultsModel
+	detail       detailModel
+	helpOverlay  helpOverlayModel
+	savedQueries savedQueriesModel
 
-	showHelp bool
+	showHelp         bool
+	showSavedQueries bool
 
 	width  int
 	height int
@@ -46,17 +58,19 @@ type Model struct {
 }
 
 // NewModel creates the root model. The engine must already be initialized.
-func NewModel(eng *engine.Engine, searcher *search.Searcher) Model {
+// repoRoot is the absolute path to the tsk repository root.
+func NewModel(eng *engine.Engine, repoRoot string) Model {
 	return Model{
-		engine:      eng,
-		searcher:    searcher,
-		state:       stateEmpty,
-		focus:       focusSearch,
-		search:      newSearchModel(),
-		results:     newResultsModel(),
-		detail:      newDetailModel(),
-		helpOverlay: newHelpOverlayModel(),
-		showHelp:    false,
+		engine:       eng,
+		repoRoot:     repoRoot,
+		state:        stateEmpty,
+		focus:        focusSearch,
+		search:       newSearchModel(),
+		results:      newResultsModel(),
+		detail:       newDetailModel(),
+		helpOverlay:  newHelpOverlayModel(),
+		savedQueries: newSavedQueriesModel(),
+		showHelp:     false,
 	}
 }
 
@@ -66,6 +80,35 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case editorFinishedMsg:
+		// Re-index the repository after the editor exits.
+		m.engine.Index(m.repoRoot)
+
+		// Refresh the current task in the detail view.
+		if m.state == stateDetail && m.detail.task != nil {
+			refreshed, err := m.engine.TaskByPath(msg.taskPath)
+			if err == nil && refreshed != nil {
+				m.detail.setTask(refreshed)
+			}
+		}
+
+		// Also re-run the last query to refresh results.
+		if m.lastQuery != "" {
+			if m.search.mode == modeFuzzy {
+				matches, err := m.engine.Search(m.lastQuery)
+				if err == nil {
+					m.results.setMatches(matches)
+				}
+			} else {
+				tasks, _, err := m.engine.Query(m.lastQuery)
+				if err == nil {
+					m.results.setTasks(tasks)
+				}
+			}
+		}
+
+		return m, nil
+
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
@@ -78,9 +121,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.results.setSize(msg.Width, contentHeight)
 		m.detail.setSize(msg.Width, contentHeight)
 		m.helpOverlay.setSize(msg.Width, msg.Height)
+		m.savedQueries.setSize(msg.Width, msg.Height)
 		return m, nil
 
 	case tea.KeyPressMsg:
+		// If saved queries overlay is showing, handle it first
+		if m.showSavedQueries {
+			return m.updateSavedQueries(msg)
+		}
+
 		// If help overlay is showing, handle it first
 		if m.showHelp {
 			return m.updateHelpOverlay(msg)
@@ -97,6 +146,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
+		// Global saved queries toggle
+		if key.Matches(msg, keys.SavedQueries) {
+			m.showSavedQueries = true
+			m.savedQueries.reset()
+			m.savedQueries.input.Focus()
+			return m, nil
+		}
+
 		switch m.state {
 		case stateDetail:
 			return m.updateDetail(msg)
@@ -105,6 +162,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		default:
 			return m.updateEmpty(msg)
 		}
+	}
+
+	// If saved queries overlay is showing, route to it
+	if m.showSavedQueries {
+		var cmd tea.Cmd
+		m.savedQueries, cmd = m.savedQueries.update(msg)
+		return m, cmd
 	}
 
 	// If help overlay is showing, route to it
@@ -137,6 +201,32 @@ func (m Model) updateHelpOverlay(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	}
 }
 
+func (m Model) updateSavedQueries(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(msg, keys.Escape), key.Matches(msg, keys.SavedQueries):
+		m.showSavedQueries = false
+		return m, nil
+	case key.Matches(msg, keys.Enter):
+		sq := m.savedQueries.selected()
+		if sq == nil {
+			return m, nil
+		}
+		m.showSavedQueries = false
+
+		// Switch to query mode and populate the search box
+		m.search.mode = modeQuery
+		m.search.input.Placeholder = "Enter a tsk query..."
+		m.search.setValue(sq.Query)
+
+		// Execute the query
+		return m.executeDSLSearch(sq.Query)
+	default:
+		var cmd tea.Cmd
+		m.savedQueries, cmd = m.savedQueries.update(msg)
+		return m, cmd
+	}
+}
+
 func (m Model) updateEmpty(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch {
 	case key.Matches(msg, keys.ToggleMode):
@@ -145,8 +235,12 @@ func (m Model) updateEmpty(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		query := m.search.value()
 		if query != "" && m.search.mode == modeFuzzy {
 			m.lastQuery = query
-			matches := m.searcher.Search(query, 1000)
-			m.results.setMatches(matches)
+			matches, err := m.engine.Search(query)
+			if err != nil {
+				m.results.setError(err.Error())
+			} else {
+				m.results.setMatches(matches)
+			}
 			m.results.blur()
 			m.state = stateResults
 		}
@@ -177,8 +271,12 @@ func (m Model) updateResults(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			query := m.search.value()
 			if query != "" && m.search.mode == modeFuzzy {
 				m.lastQuery = query
-				matches := m.searcher.Search(query, 1000)
-				m.results.setMatches(matches)
+				matches, err := m.engine.Search(query)
+				if err != nil {
+					m.results.setError(err.Error())
+				} else {
+					m.results.setMatches(matches)
+				}
 				m.results.blur()
 				m.state = stateResults
 			} else if query == "" {
@@ -263,6 +361,9 @@ func (m Model) updateDetail(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.state = stateResults
 		return m, nil
 
+	case key.Matches(msg, keys.Edit):
+		return m.editCurrentTask()
+
 	case key.Matches(msg, keys.Up):
 		if m.results.cursor > 0 {
 			m.results.cursor--
@@ -282,6 +383,35 @@ func (m Model) updateDetail(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.detail, cmd = m.detail.update(msg)
 		return m, cmd
 	}
+}
+
+// editCurrentTask opens the current task in $EDITOR.
+func (m Model) editCurrentTask() (tea.Model, tea.Cmd) {
+	task := m.detail.task
+	if task == nil {
+		return m, nil
+	}
+
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		editor = "vi"
+	}
+
+	// Resolve canonical path to filesystem path.
+	var filePath string
+	if task.IsReadme {
+		filePath = filepath.Join(m.repoRoot, "tasks", string(task.Path), "README.md")
+	} else {
+		filePath = filepath.Join(m.repoRoot, "tasks", string(task.Path)+".md")
+	}
+
+	taskPath := task.Path
+	c := exec.Command(editor, filePath)
+	cmd := tea.ExecProcess(c, func(err error) tea.Msg {
+		return editorFinishedMsg{err: err, taskPath: taskPath}
+	})
+
+	return m, cmd
 }
 
 // openSelectedTask opens the currently selected task in the detail view.
@@ -330,9 +460,15 @@ func (m Model) executeSearch() (tea.Model, tea.Cmd) {
 }
 
 func (m Model) executeDSLSearch(query string) (tea.Model, tea.Cmd) {
-	tasks, err := m.engine.Search(query)
+	tasks, diags, err := m.engine.Query(query)
 	if err != nil {
 		m.results.setError(err.Error())
+		m.state = stateResults
+		return m, nil
+	}
+
+	if diags.HasErrors() {
+		m.results.setError(diags.Errors()[0].Message)
 		m.state = stateResults
 		return m, nil
 	}
@@ -349,7 +485,12 @@ func (m Model) executeDSLSearch(query string) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) executeFuzzySearch(query string) (tea.Model, tea.Cmd) {
-	matches := m.searcher.Search(query, 1000)
+	matches, err := m.engine.Search(query)
+	if err != nil {
+		m.results.setError(err.Error())
+		m.state = stateResults
+		return m, nil
+	}
 
 	m.results.setMatches(matches)
 	m.state = stateResults
@@ -382,8 +523,12 @@ func (m Model) maybeLiveFuzzy(prevQuery string, cmd tea.Cmd) (tea.Model, tea.Cmd
 	}
 
 	m.lastQuery = query
-	matches := m.searcher.Search(query, 1000)
-	m.results.setMatches(matches)
+	matches, err := m.engine.Search(query)
+	if err != nil {
+		m.results.setError(err.Error())
+	} else {
+		m.results.setMatches(matches)
+	}
 	m.results.blur()
 	m.state = stateResults
 	return m, cmd
@@ -403,8 +548,10 @@ func (m Model) View() tea.View {
 		content = searchView + "\n" + renderEmptyState(m.width, m.search.mode == modeFuzzy)
 	}
 
-	// If help overlay is active, render it on top
-	if m.showHelp {
+	// If an overlay is active, render it on top
+	if m.showSavedQueries {
+		content = m.savedQueries.view()
+	} else if m.showHelp {
 		content = m.helpOverlay.view()
 	}
 

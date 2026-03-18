@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"charm.land/lipgloss/v2"
 	"github.com/jpcummins/tsk-lib/model"
 	"github.com/jpcummins/tsk-lib/search"
 )
@@ -182,13 +181,13 @@ func (m resultsModel) renderRow(task *model.Task, match *search.Match, selected 
 	}
 
 	// Line 1: path + status + assignee
-	path := pathStyle.Render(string(task.CanonicalPath))
+	path := pathStyle.Render(string(task.Path))
 
 	var meta []string
 	if task.Status != "" {
 		meta = append(meta, task.Status)
-	} else if task.StatusCategory != "" {
-		meta = append(meta, string(task.StatusCategory))
+	} else if task.Category != "" {
+		meta = append(meta, string(task.Category))
 	}
 	if task.Assignee != "" {
 		meta = append(meta, task.Assignee)
@@ -226,7 +225,7 @@ func (m resultsModel) renderRow(task *model.Task, match *search.Match, selected 
 	}
 
 	content := line1 + "\n" + line2
-	row := rowStyle.Width(lipgloss.Width(content) + 2).Render(content)
+	row := rowStyle.Width(m.width).Render(content)
 
 	return row + "\n"
 }
@@ -247,9 +246,6 @@ func renderHighlightSnippet(highlights []search.Highlight, maxWidth int, selecte
 
 	// Flatten to a single line for display.
 	text = flattenToLine(text)
-
-	// Recalculate position in the flattened text.
-	// Since we replaced newlines with spaces (same byte length), positions are preserved.
 
 	// Determine a context window around the first match.
 	contextChars := 20
@@ -280,12 +276,9 @@ func renderHighlightSnippet(highlights []search.Highlight, maxWidth int, selecte
 		suffix = "..."
 	}
 
-	// Collect highlight positions from the same field that fall within
-	// our snippet window. We only use positions from hl.Field since
-	// positions from other fields refer to different text.
+	// Collect highlight positions that fall within our snippet window.
 	var positions []search.Range
 	for _, pos := range hl.Positions {
-		// Adjust position relative to snippet.
 		adjStart := pos.Start - snippetStart
 		adjEnd := pos.End - snippetStart
 		if adjEnd <= 0 || adjStart >= len(snippet) {
@@ -300,10 +293,8 @@ func renderHighlightSnippet(highlights []search.Highlight, maxWidth int, selecte
 		positions = append(positions, search.Range{Start: adjStart, End: adjEnd})
 	}
 
-	// Sort and merge positions.
 	positions = sortAndMerge(positions)
 
-	// Render the snippet with highlights.
 	fieldLabel := hintStyle.Render("  " + hl.Field + ": ")
 	rendered := fieldLabel + prefix + renderTextWithHighlights(snippet, positions, selected) + suffix
 
@@ -327,7 +318,7 @@ func renderTextWithHighlights(text string, positions []search.Range, selected bo
 	hl := matchHighlightStyle
 	if selected {
 		ctx = resultSummarySelectedStyle
-		hl = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFD700")).Bold(true).Background(colorHighlightBg)
+		hl = matchHighlightSelectedStyle
 	}
 
 	for _, pos := range positions {
@@ -346,10 +337,8 @@ func renderTextWithHighlights(text string, positions []search.Range, selected bo
 	return b.String()
 }
 
-// flattenToLine replaces newlines and consecutive whitespace with single spaces.
+// flattenToLine replaces newlines and tabs with spaces, preserving byte offsets.
 func flattenToLine(s string) string {
-	// Replace all whitespace sequences with single space, preserving byte offsets
-	// by replacing individual characters.
 	result := make([]byte, len(s))
 	for i := 0; i < len(s); i++ {
 		if s[i] == '\n' || s[i] == '\r' || s[i] == '\t' {
@@ -367,7 +356,6 @@ func sortAndMerge(positions []search.Range) []search.Range {
 		return positions
 	}
 
-	// Simple insertion sort (positions are usually few).
 	for i := 1; i < len(positions); i++ {
 		for j := i; j > 0 && positions[j].Start < positions[j-1].Start; j-- {
 			positions[j], positions[j-1] = positions[j-1], positions[j]
