@@ -2,7 +2,7 @@
 
 A terminal user interface for querying and browsing [tsk](https://github.com/jpcummins/tsk) repositories.
 
-https://github.com/user-attachments/assets/3dda7cf4-29f6-45cc-883e-7ef360300df2
+https://github.com/user-attachments/assets/8e944ca2-25e3-42dc-a494-13bdb2e258de
 
 ## Features
 
